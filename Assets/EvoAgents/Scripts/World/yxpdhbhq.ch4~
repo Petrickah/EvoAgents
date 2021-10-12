@@ -1,0 +1,92 @@
+using Unity.Collections;
+using Unity.Mathematics;
+using Unity.Jobs;
+using Unity.Burst;
+using Cysharp.Threading.Tasks;
+
+namespace EvoAgents.World
+{
+    public class PoissonDiscSampling
+    {
+        private float2 extents;
+        private readonly float radius;
+        private const int k = 30;
+        private Random random;
+
+        public PoissonDiscSampling(uint seed, float2 _extents, float _radius) {
+            extents = _extents;
+            radius = _radius;
+            random = (seed != 0) ? new Random(seed): new Random((uint)System.DateTime.Now.Millisecond);
+        }
+
+        float2 RandomPoint() {
+            var x = (extents / 2f) * (2f * random.NextFloat2() - 1f);
+            return x;
+        }
+
+        int RandomIndex(int length) {
+            return (int)(random.NextFloat(0, 1) * length);
+        }
+
+        public async UniTask<NativeArray<float2>> GeneratePoints(int density) {
+            int pIndex;
+            var activeList = new NativeArray<float2>(density, Allocator.TempJob);
+
+            var x0 = RandomPoint();
+            activeList[0] = x0;
+
+            int x = 0;
+            while(x < 10) {
+                pIndex = RandomIndex(activeList.Length);
+                var xi = activeList[pIndex];
+
+                var rejectionPoints = new RejectionPoints {
+                    xi = xi,
+                    radius = radius,
+                    random = random,
+                    activeList = activeList,
+                };
+
+                await rejectionPoints.Schedule(k, 1);
+                x++;
+                /*bool reject = false;
+                for(int pk = 0; pk < k; pk++) {
+                    var x = RandomPointAround(xi);
+                    bool ok = WithinDistance(x, activeList);
+                    if(ok) {
+                        activeList.Add(x);
+                        continue;
+                    }
+                    reject = true;
+                }
+                if(reject) {
+                    activeList.RemoveAt(pIndex);
+                }*/
+            }
+            return activeList;
+        }
+    }
+
+    [BurstCompile]
+    public struct RejectionPoints : IJobParallelFor
+    {
+        public float2 xi;
+        public float radius;
+        public Random random;
+        public NativeArray<float2> activeList;
+        public void Execute(int index) {
+            var x = RandomPointAround(xi);
+            activeList[index] = WithinDistance(x) ? x : float2.zero;
+        }
+
+        float2 RandomPointAround(float2 xi) {
+            return xi + 2f * radius * (2f * random.NextFloat2() - 1f);
+        }
+
+        bool WithinDistance(float2 xi) {
+            foreach (float2 point in activeList)
+                if (math.distance(xi, point) < radius) return false;
+            return true;
+        }
+    }
+}

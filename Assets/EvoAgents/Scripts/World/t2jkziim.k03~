@@ -1,0 +1,53 @@
+using Unity.Collections;
+using Unity.Mathematics;
+using Unity.Jobs;
+using Unity.Burst;
+using Cysharp.Threading.Tasks;
+
+namespace EvoAgents.World
+{
+    public class PoissonDiscSampling
+    {
+        private float2 extents;
+        private readonly float radius;
+        private const int k = 30;
+        private Random random;
+
+        private NativeArray<int> grid;
+        private NativeList<float2> activeList;
+
+        public PoissonDiscSampling(uint seed, float2 _extents, float _radius) {
+            extents = _extents;
+            radius = _radius;
+            random = (seed != 0) ? new Random(seed): new Random((uint)System.DateTime.Now.Millisecond);
+            activeList = new NativeList<float2>(Allocator.TempJob);
+        }
+
+        float2 RandomPoint(float length, float size, ref int pIndex) {
+            var x0 = (2f * random.NextFloat2Direction() - 1f) * extents * 0.5f;
+            var gridPos = (int2)(x0 / length);
+            pIndex = gridPos.x + gridPos.y * (int)size;
+            return x0;
+        }
+
+        float2 RandomPointAround(float2 xi) {
+            return xi + radius * (1f + random.NextFloat2Direction());
+        }
+
+        public NativeArray<float2> GeneratePoints(int density) {
+            var length = radius * math.rsqrt(2);
+            float2 size = extents * (1 / length);
+            grid = new NativeArray<int>((int)(size.x * size.y), Allocator.TempJob);
+            var points = new NativeArray<float2>(density, Allocator.TempJob);
+            int pIndex;
+            for (pIndex = 0; pIndex < grid.Length; pIndex++)
+                grid[pIndex] = -1;
+
+            
+
+            activeList.Dispose();
+            grid.Dispose();
+            return points;
+        }
+    }
+}

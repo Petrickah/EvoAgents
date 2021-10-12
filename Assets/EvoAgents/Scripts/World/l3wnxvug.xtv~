@@ -1,0 +1,78 @@
+using Unity.Collections;
+using Unity.Mathematics;
+using Unity.Jobs;
+using Unity.Burst;
+using System;
+using Cysharp.Threading.Tasks;
+
+namespace EvoAgents.World
+{
+    [Serializable]
+    public struct PoissonDiscSampling
+    {
+        public float2 extent;
+        public float samplingDistance;
+        public int samplesBeforeRejection;
+        public NativeList<float2> points;
+
+        private NativeList<float2> activeList;
+        private NativeArray<int> grid;
+        private readonly float length;
+        private readonly uint seed;
+        private int2 size;
+        private Unity.Mathematics.Random random;
+
+        public PoissonDiscSampling(float r, float2 _size, uint seed, ref NativeList<float2> _points) {
+            extent = _size;
+            samplingDistance = r;
+            samplesBeforeRejection = 30;
+            activeList = new NativeList<float2>(Allocator.TempJob);
+            points = _points;
+
+            length = samplingDistance * math.rsqrt(2);
+            size = (int2)(extent * (1 / length));
+            grid = new NativeArray<int>(size.x * size.y, Allocator.Persistent);
+            this.seed = seed;
+        }
+
+        public async UniTask Execute() {
+            var randPoint = new RandomPoint(seed, extent, ref activeList);
+            await randPoint.Schedule();
+            var x0 = activeList[0];
+
+            int2 gridPosition = (int2)(x0 * (1 / length));
+            grid[gridPosition.x + size.x * gridPosition.y] = 0;
+            while(!activeList.IsEmpty)
+            {
+                var xi = activeList[]
+            }
+        }
+
+        public void Dispose()
+        {
+            grid.Dispose();
+            points.Dispose();
+            activeList.Dispose();
+        }
+    }
+
+    [BurstCompile]
+    struct RandomPoint : IJob
+    {
+        public float2 extent;
+        public NativeList<float2> points;
+        private Unity.Mathematics.Random random;
+        public RandomPoint(uint seed, float2 _extent, ref NativeList<float2> _points) {
+            if (seed != 0) random = new Unity.Mathematics.Random(seed);
+            else random = new Unity.Mathematics.Random((uint)DateTime.Now.Millisecond);
+            points = _points;
+            extent = _extent;
+        }
+
+        public void Execute() {
+            var a = 0.5f * extent * (2f * random.NextFloat2Direction() - 1f);
+            points.Add(a);
+        }
+    }
+
+}

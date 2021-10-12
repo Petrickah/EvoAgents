@@ -1,0 +1,67 @@
+
+namespace EvoAgents.BehavioursV2.Composites
+{
+    public static class BehaviourTaskComposite
+    {
+        public static TaskGenerator Sequencer(this TaskGenerator builder)
+        {
+            return builder.PushTask(BehaviourTask.Run<BehaviourStatus>(async (self, token) => {
+                foreach (var task in self.Tasks) {
+                    if (token.IsCancellationRequested)
+                        return BehaviourStatus.Failure;
+                    var status = await task;
+                    if (status == BehaviourStatus.Failure) return BehaviourStatus.Failure;
+                }
+                return BehaviourStatus.Success;
+            }));
+        }
+
+        public static TaskGenerator Selector(this TaskGenerator builder)
+        {
+            return () => Create(async (token) => {
+                foreach (var task in behaviourTasks)
+                {
+                    if (token.IsCancellationRequested)
+                        return BehaviourStatus.Failure;
+
+                    var status = await task().Invoke(token);
+                    switch (status)
+                    {
+                        case BehaviourStatus.Failure: continue;
+                        case BehaviourStatus.Success: return BehaviourStatus.Success;
+                        case BehaviourStatus.Continue: return BehaviourStatus.Continue;
+                    }
+                }
+                return BehaviourStatus.Failure;
+            });
+        }
+        public static BehaviourFactory RandomSelector(params BehaviourFactory[] behaviourTasks)
+        {
+            return () => Create(async (token) => {
+                if (token.IsCancellationRequested)
+                    return BehaviourStatus.Failure;
+
+                var task = behaviourTasks[UnityEngine.Random.Range(0, behaviourTasks.Length)];
+                var status = await task().Invoke(token);
+                if (status == BehaviourStatus.Success)
+                    return BehaviourStatus.Success;
+                return BehaviourStatus.Failure;
+            });
+        }
+
+        public static BehaviourFactory Parallel(params BehaviourFactory[] behaviourTasks)
+        {
+            return () => Create(async (token) => {
+                var taskList = new List<UniTask<BehaviourStatus>>();
+                foreach (var task in behaviourTasks)
+                {
+                    if (token.IsCancellationRequested)
+                        return BehaviourStatus.Failure;
+                    taskList.Add(task().Invoke(token));
+                }
+                await UniTask.WhenAll(taskList);
+                return BehaviourStatus.Success;
+            });
+        }
+    }
+}

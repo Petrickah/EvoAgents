@@ -1,0 +1,17 @@
+{
+    "name": "EvoAgents.Behaviours",
+    "rootNamespace": "EvoAgents.Behaviours",
+    "references": [
+        "GUID:920ce90525a5c3e46a2ff2eac0c1b4d6",
+        "GUID:f51ebe6a0ceec4240a699833d6309b23"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
