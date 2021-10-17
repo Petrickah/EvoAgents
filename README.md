@@ -1,12 +1,12 @@
-# <center>EvoAgents - Rabbit Catcher</center>
-## <center>Developing an artificial intelligence based video game</center>
+# <c>EvoAgents - Rabbit Catcher</c>
+## <c>Developing an artificial intelligence based video game</c>
 
 ![Image](./Images/Poster.png)
 
 ## <i>Introduction</i>
 
 <h3>
-This video game was developed as a project for my Bachelor's thesis at University Petroleum-Gas of Ploiesti. </p>
+This video game was developed as a project for my Bachelor's thesis at Petroleum-Gas University of Ploiesti. </p>
 
 I've made first and foremost, an algorithm for artificial intelligence based on Behaviour Trees. It is an asynchronous implementation of a Behaviour Tree using UniTask as a library. The scope of the algorithm was implementing an evaluation method of a tree based on asynchronous calls of the action nodes.</p>
 
